@@ -101,8 +101,9 @@ full_vessel = calibrate(MinimalVessel(**my_vessel),rho = 1000)
 
 ### Extension for winds and currents
 
-Current and wind forces are calculated according to [Fossen, 2011](https://doi.org/10.1002/9781119994138). 
-The angle of attack for currents is set as an angle from the global reference frame. 0° current are parallel to the x-axis. Angles rotate clockwise, directions are modeled as `coming from`. (Wind direction of 90° means wind flows from east to west.)
+Current and wind forces are calculated according to [Fossen, 2011](https://doi.org/10.1002/9781119994138):
+
+The angle of attack for currents is set as an angle from the global reference frame. 0° current are parallel to the x-axis. Angles rotate clockwise, directions are modeled as `coming from`. (Wind direction of 0° with positive speed means wind flows from east to west. Similarly, a current direction of 90° with positive speed means the current flows from north to south.)
 
 ### Shallow water adaption
 
