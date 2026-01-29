@@ -11,7 +11,7 @@ gms_like_inland_barge = {
     "L": 105.0,
     "B": 9.5,
     "T": 2.8,
-    "x_G": -0.887, # Longitudinal center of gravity from midship (m)
+    "x_G": 0.887, # Longitudinal center of gravity from midship (m)
     "m": 2_478_451.0, # Vessel mass (kg)
     "r_zz": 24.526, # Radius of gyration in yaw (m)
     "rho": 1000.0, # Water density (kg/m³)
