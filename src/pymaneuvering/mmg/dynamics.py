@@ -529,7 +529,7 @@ class MMGModel(cmn.Maneuvervable):
             np.ndarray: New position and heading of the vessel (Eta)
         """
         old_uvr = X.copy()
-        old_eta_dot = np.dot(cmn.rotpsi_ned(psi), old_uvr)
+        old_eta_dot = np.dot(cmn.rotpsi(psi), old_uvr)
 
         uvr_dot = self.step(
             X=X,
@@ -548,7 +548,7 @@ class MMGModel(cmn.Maneuvervable):
         new_uvr = old_uvr + uvr_dot
 
         # Find new eta_dot via rotation
-        eta_dot_new = np.dot(cmn.rotpsi_ned(psi), new_uvr)
+        eta_dot_new = np.dot(cmn.rotpsi(psi), new_uvr)
 
         # Update position in earth fixed coordinate system
         eta = np.hstack((pos, psi))
