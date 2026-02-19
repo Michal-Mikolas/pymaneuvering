@@ -1,6 +1,6 @@
 from enum import Enum
 
-from .utils.common import MMGVessel, AbkowitzVessel
+from .utils.common import MMGVessel, AbkowitzVessel, IntegrationMode
 from .mmg.calibrated_vessels import (kvlcc2_full, kvlcc2_l64)
 from .mmg.dynamics import MMGModel
 from .abkowitz.dynamics import AbkowitzModel
@@ -24,6 +24,5 @@ class Vessel:
         else:
             raise ValueError(f"Unknown vessel type: {new_from}")
 
-
 __version__ = "2.0.0"
-__author__ = "Niklas Paulig <niklas.paulig@tu-dresden.de>"
+__author__ = "Niklas Paulig"
