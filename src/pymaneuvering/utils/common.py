@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 import numpy as np
 import numpy.typing as npt
@@ -26,27 +27,13 @@ def angle_to_two_pi(angle: float) -> float:
     """Converts an angle to the range [0, 2*pi]."""
     return angle % (2 * np.pi)
 
-
-def rotpsi_ned(psi: float) -> np.ndarray:
-    """
-    Computes a rotation matrix for given 
-    heading (in rad) in NED coordinate system.
-    Positive rotation is clockwise.
-    """
+def rotpsi(psi: float, offset: float = 0.0) -> np.ndarray:
+    """Computes a rotation matrix for given heading (in rad)."""
+    psi += offset
     return np.array(
         [
             [np.cos(psi), -np.sin(psi), 0.0],
             [np.sin(psi), np.cos(psi), 0.0],
-            [0.0, 0.0, 1.0],
-        ]
-    )
-
-def rotpsi(psi: float) -> np.ndarray:
-    """Computes a rotation matrix for given heading (in rad)."""
-    return np.array(
-        [
-            [np.cos(psi), np.sin(psi), 0.0],
-            [-np.sin(psi), np.cos(psi), 0.0],
             [0.0, 0.0, 1.0],
         ]
     )
@@ -221,6 +208,11 @@ class Maneuvervable(ABC):
     def pstep(self, *args, **kwargs) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Perform a single time step and transform to earth-fixed coordinates."""
         pass
+    
+class IntegrationMode(Enum):
+    """Enumeration for integration modes."""
+    TRAPEZOIDAL = 1
+    RK4 = 2
 
 
 Surge        = float
