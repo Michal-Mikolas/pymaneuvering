@@ -112,7 +112,7 @@ class AbkowitzModel(cmn.Maneuvervable):
         p = self.vessel
 
 
-        u, v, r  = X[0], X[1], -X[2]
+        u, v, r  = X[0], X[1], X[2]
 
         # Correct for current if given
         if fl_vel is not None and fl_psi is not None:
@@ -133,31 +133,36 @@ class AbkowitzModel(cmn.Maneuvervable):
         h_prime = min(h / p.T, 8.00)  # Cap at max value from Yang and el Moctar (2024)
         
         # Instantaneous speed
-        U = math.sqrt(u**2 + v**2)
+        U = math.sqrt(u**2 + v**2) + 1e-6 # Add small number to avoid division by zero in corrections at zero speed
+        
+        # Non-dimensionalized quantities
+        v_prime = v / U
+        r_prime = r * p.L / U
+        du_prime = du / U
         
         # Model forces from Eq (7)
         # Surge force without added mass couplings
         F_X = (
-            (p.X_u * du + p.X_uu * du**2) * f_Xu(h_prime, du/U) +
-            (p.X_vv * v**2 + p.X_vvvv * v**4) * f_Xv(h_prime, abs(v/U)) +
-            (p.X_rr * r**2 + p.X_vr * v * r + p.X_vvrr * v**2 * r**2) * f_Xvr(h_prime, abs(v/U)) +
-            (p.X_dd * delta**2 + p.X_udd * du * delta**2) * f_Xd(h_prime, du/U)
+            (p.X_u * du_prime + p.X_uu * du_prime**2) * f_Xu(h_prime, du_prime) +
+            (p.X_vv * v_prime**2 + p.X_vvvv * v_prime**4) * f_Xv(h_prime, abs(v_prime)) +
+            (p.X_rr * r_prime**2 + p.X_vr * v_prime * r_prime + p.X_vvrr * v_prime**2 * r_prime**2) * f_Xvr(h_prime, abs(v_prime)) +
+            (p.X_dd * delta**2 + p.X_udd * du_prime * delta**2) * f_Xd(h_prime, du_prime)
         )
         
         # Sway force without added mass couplings
         F_Y = (
-            (p.Y_v * v + p.Y_vvv * v**3) * f_Yv(h_prime, abs(v/U)) +
-            (p.Y_r * r + p.Y_rrr * r**3) * f_Yr(h_prime, abs(r* p.L / U)) +
-            (p.Y_vrr * v * r**2 + p.Y_vvr * v**2 * r) * f_Yvr(h_prime, abs(v/U)) +
-            (p.Y_d * delta + p.Y_ddd * delta**3 + p.Y_ud * du * delta + p.Y_uddd * du * delta**3) * f_Yd(h_prime, du/U)
+            (p.Y_v * v_prime + p.Y_vvv * v_prime**3) * f_Yv(h_prime, abs(v_prime)) +
+            (p.Y_r * r_prime + p.Y_rrr * r_prime**3) * f_Yr(h_prime, abs(r_prime)) +
+            (p.Y_vrr * v_prime * r_prime**2 + p.Y_vvr * v_prime**2 * r_prime) * f_Yvr(h_prime, abs(v_prime)) +
+            (p.Y_d * delta + p.Y_ddd * delta**3 + p.Y_ud * du_prime * delta + p.Y_uddd * du_prime * delta**3) * f_Yd(h_prime, du_prime)
         )
         
         # Yaw moment without added mass couplings
         F_N = (
-            (p.N_v * v + p.N_vvv * v**3 + p.N_vrr * v * r**2) * f_Nv(h_prime, abs(v/U)) +
-            (p.N_r * r + p.N_rrr * r**3) * f_Nr(h_prime, abs(r* p.L / U)) +
-            (p.N_vvr * v**2 * r) * f_Nvr(h_prime, abs(v/U)) +
-            (p.N_d * delta + p.N_ddd * delta**3 + p.N_ud * du * delta + p.N_uddd * du * delta**3) * f_Nd(h_prime, du/U)
+            (p.N_v * v_prime + p.N_vvv * v_prime**3 + p.N_vrr * v_prime * r_prime**2) * f_Nv(h_prime, abs(v_prime)) +
+            (p.N_r * r_prime + p.N_rrr * r_prime**3) * f_Nr(h_prime, abs(r_prime)) +
+            (p.N_vvr * v_prime**2 * r_prime) * f_Nvr(h_prime, abs(v_prime)) +
+            (p.N_d * delta + p.N_ddd * delta**3 + p.N_ud * du_prime * delta + p.N_uddd * du_prime * delta**3) * f_Nd(h_prime, du_prime)
         )
 
         # Dimensionalizers
