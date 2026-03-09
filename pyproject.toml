@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mmgdynamics"
-version = "1.0.9"
+name = "pymaneuvering"
+version = "2.0.0"
 authors = [
-    { name = "Niklas Paulig", email = "niklas.paulig@tu-dresden.de" },
+    { name = "Niklas Paulig" },
 ]
-description = "MMG standard model for ship maneuvering"
+description = "A Python implementation of MMG and Abkowitz-type maneuvering models for inland and ocean vessels."
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",

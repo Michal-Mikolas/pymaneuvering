@@ -1,130 +1,117 @@
-# MMG Standard model with extensions for winds, currents and shallow water
+# MMG Dynamics and Abkowitz Model for Ship Maneuvering (v2.0)
 
-In here you find an implementation of the [MMG standard model](https://doi.org/10.1007/s00773-014-0293-y) by Yasukawa, H., Yoshimura, Y. (2015).
+This package implementation provides standard models for ship maneuvering:
+1.  **MMG Standard Model**: Based on Yasukawa & Yoshimura (2015), suitable for ocean-going vessels with extensions for wind, current, and shallow water.
+2.  **Abkowitz-Type Model**: Based on Yang & el Moctar (2024), tailored for inland barges operating in shallow water.
+
+## ⚠️ API Change in Version 2.0
+**Important:** Version 2.0 introduces a breaking API change. The package now supports multiple dynamics models. You must instantiate a specific model (MMG or Abkowitz) before calling simulation steps. The old top-level `pstep()` function has been moved to methods within these model classes.
 
 ## Installation
 
 Install the package via pip:
 
 ```bash
-pip install git+https://github.com/nikpau/mmgdynamics
+pip install git+https://github.com/nikpau/pymaneuvering
 ```
 
-## Dynamics
+## Quick Start
 
-The MMG dynamics model can be used straight out of the box with any vessel listed in `calibrated_vessels.py`.
-For most applications, you’ll want to use the `pstep()` function. This high-level method takes the vessel’s current global position, surge, sway, and yaw rate, along with optional environmental disturbances (water depth, wind speed/direction, current speed/direction). It directly returns the updated earth-fixed position and the new surge, sway, and yaw rates. This makes it the easiest entry point for integrating the MMG dynamics into your project.
+The easiest way to get started is by using the `Vessel` dispatcher with a pre-calibrated vessel type from `VTYPE`.
 
-If you need finer control over the calculations, use the lower-level `step()` function. This method takes the initial surge, sway, and yaw rate, plus vessel parameters and optional disturbances, and returns the raw first derivatives of these states. You’ll need to handle the integration and post-processing yourself.
+### 1. MMG Model (Ocean-going)
 
-The underlying dynamics are implemented in `dynamics.py`.
-See the example below for how to call the model in your code.
+The MMG model requires propeller revolutions (`nps`) as a control input alongside the rudder angle (`delta`). It supports wind and current disturbances.
 
 ```python
 import math
-import mmgdynamics as mmg
-import mmgdynamics.calibrated_vessels as cvs
-import matplotlib.pyplot as plt # Just for demostration
+from pymaneuvering import Vessel, VTYPE
 
-# Load a pre-calibrated vessel
-vessel = mmg.Vessel(**cvs.kvlcc2_l64)
+# 1. Initialize an MMG model (e.g., KVLCC2 Tanker)
+vessel_type = VTYPE.KVLCC2_L64 # or KVLCC2_FULL
+vessel = Vessel(new_from=vessel_type)
 
-# Let the vessel drive with a rudder angle
-# of 10° for 1000 seconds
-# -------------------------------------
-# Inital position
-pos = [0,0] # x,y [m]
+# 2. Set initial state
+pos = [0.0, 0.0]        # North, East [m]
+psi = 0.0               # Heading [rad]
+uvr = [3.85, 0.0, 0.0]  # Surge, Sway, Yaw Rate [m/s, m/s, rad/s]
 
-# Initial heading
-psi = 0 # [rad]
+# 3. Simulate one step (pstep returns updated state)
+new_uvr, new_eta = vessel.pstep(
+    X=uvr,
+    pos=pos,
+    dT=1.0,                 # Time step [s]
+    nps=4.0,                # Propeller revs [1/s] (REQUIRED for MMG)
+    delta=10 * (math.pi/180), # Rudder angle [rad]
+    psi=psi,
+    water_depth=None,       # Optional: shallow water correction
+    w_vel=10.0,             # Optional: Wind speed [m/s]
+    beta_w=math.pi,         # Optional: Wind direction [rad]
+    fl_vel=None, fl_psi=None # Optional: Current
+)
 
-# Random initial values (replace these with yours)
-uvr = [3.85, 0, 0] # u,v,r [m/s, m/s, rad/s]
-
-positions = []
-for _ in range(1000):
-    uvr, eta = mmg.pstep(
-        X           = uvr,
-        pos         = pos,
-        vessel      = vessel,
-        dT          = 1,    # 1 second
-        nps         = 4,    # 4 revs per second
-        delta       = 10 * (math.pi / 180), # Convert to radians
-        psi         = psi,  # Heading
-        water_depth = None, # No water depth
-        fl_psi      = None, # No current angle
-        fl_vel      = None, # No current velocity
-        w_vel       = None, # No wind velocity
-        beta_w      = None  # No wind angle
-    )
-    x,y,psi = eta # Unpack new position and heading
-    positions.append([x,y]) # Store the new position
-    pos = [x,y] # Update the position
-    
-# Quick plot of the trajectory
-ps = list(zip(*positions))
-plt.plot(ps[0], ps[1])
-plt.show()
+print(f"New Position: {new_eta[0:2]}")
 ```
 
-### Calibrate custom vessel
+### 2. Abkowitz Model (Inland/Shallow Water)
 
-To calibrate a vessel not present in the `calibrated_vessels.py` file, you can define a minimal dict with basic information about the vessel and use `calibrate()` to make it usable in the `step()` function. Several empirical formulas will be used to estimate the relevant hydrodynamic derivatives for your vessel and return a dict, which can be used as an input to the `step()` function.
-> Disclaimer: The quality of the empirical estimations for hydrodynamic derivatives varies greatly for different ships. Please consider comprehensive testing before using a custom vessel.
+The Abkowitz model for inland barges is designed for shallow water operations. It **does not** use `nps` (propeller RPM). Instead, the vessel's surge velocity (`u`) is the primary longitudinal state. Shallow water effects are integral to this model, so `water_depth` is a **required** parameter.
 
-#### Calibration process:
-
-Under `src/structs.py`, you will find the dataclasses responsible for modeling the vessel objects. For using a minimal dict as a vessel, you must define it as seen below and then pass it into the `calibrate()` function which returns a full vessel object.
-
-The empirical estimations need at least the following information:
+> **Note on speed behavior (`U_0`)**  
+> The Abkowitz formulation is calibrated around a **reference speed** `U_0` (see vessel coefficients). Internally, surge-related terms are evaluated using the deviation `du = u - U_0`, so the model is typically most reliable when the simulated surge speed `u` stays reasonably close to `U_0`.  
+> Unlike the MMG model, there is no explicit propulsion control input (`nps`) to command detailed acceleration/deceleration transients directly. As a result, precise speed-up/slow-down maneuvers (as modeled in MMG) are not directly represented in the same way.
 
 ```python
-from mmgdynamics.structs import MinimalVessel
-from mmgdynamics.dynamics import calibrate
+import math
+from pymaneuvering import Vessel, VTYPE
 
-my_vessel = {
-  "m":        0.0, # Vessel displacement [m³]
-  "B":        0.0, # Vessel Breadth (width)
-  "Lpp":      0.0, # Length between perpendiculars
-  "C_b":      0.0, # Block coefficient (< 0.8)
-  "D_p":      0.0, # Propeller Diameter
-  "eta":      0.0, # Ratio of propeller diameter to rudder span
-  "f_alpha":  0.0  # Rudder lift gradient coefficient 
-                   # (If not given you will be asked for the rudder aspect ratio)
-}
+# 1. Initialize an Abkowitz model (e.g., GMS-like Inland Barge)
+vessel_type = VTYPE.GMS_LIKE
+vessel = Vessel(new_from=vessel_type)
 
-# To create a complete vessel object, you must pass
-# the minimal dict and the water density of your environment 
-# into the calibrate function as a minimal Vessel:
-full_vessel = calibrate(MinimalVessel(**my_vessel),rho = 1000)
+# 2. Set initial state
+pos = [0.0, 0.0]
+psi = 0.0
+uvr = [2.5, 0.0, 0.0]  # Surge velocity drives the vessel
+
+# 3. Simulate one step
+new_uvr, new_eta = vessel.pstep(
+    X=uvr,
+    pos=pos,
+    dT=1.0,
+    delta=20 * (math.pi/180), # Rudder angle [rad]
+    psi=psi,
+    water_depth=3.5,        # Water depth [m] (REQUIRED for Abkowitz)
+    # nps is NOT used here
+    # w_vel (Wind) is NOT supported here
+    fl_vel=0.5,             # Optional: Current speed [m/s]
+    fl_psi=math.pi/2        # Optional: Current direction [rad]
+)
 ```
 
-### Extension for winds and currents
+## Comparisons & Capabilities
 
-Current and wind forces are calculated according to [Fossen, 2011](https://doi.org/10.1002/9781119994138):
+| Feature | MMG Model | Abkowitz Model |
+| :--- | :--- | :--- |
+| **Primary Use Case** | Ocean-going vessels (e.g., Tankers) | Inland vessels / Barges |
+| **Reference** | Yasukawa & Yoshimura (2015) | Yang & el Moctar (2024) |
+| **Propulsion Input** | **Required (`nps`)**. Propeller RPM drives surge. | **Implicit**. Surge velocity (`u`) is the main longitudinal state. |
+| **Shallow Water** | Optional correction. | **Required** core component. |
+| **Wind** | ✅ Supported (`w_vel`, `beta_w`) | ❌ Not supported |
+| **Current** | ✅ Supported (`fl_vel`, `fl_psi`) | ✅ Supported (`fl_vel`, `fl_psi`) |
 
-The angle of attack for currents is set as an angle from the global reference frame. 0° current are parallel to the x-axis. Angles rotate clockwise, directions are modeled as `coming from`. (Wind direction of 0° with positive speed means wind flows from east to west. Similarly, a current direction of 90° with positive speed means the current flows from north to south.)
+## Advanced Usage
 
-### Shallow water adaption
+### Dynamics (`step` vs `pstep`)
 
-The effects of shallow water are incorporated using various semi-empirical formulas summarized in [Taimuri et. al. (2020)](https://doi.org/10.1016/j.oceaneng.2020.108103)
+*   **`pstep(...)`**: **(Recommended)** "Position Step". inputs current state, position, and controls. Returns **updated state** (new `uvr`) and **updated position** (new `eta`). Handles coordinate transformation (vessel -> earth fixed) internally.
+*   **`step(...)`**: "Dynamics Step". inputs current state and controls. Returns **accelerations/derivatives** (`u_dot`, `v_dot`, `r_dot`). Useful if you want to implement your own integration scheme (e.g., Runge-Kutta).
 
-## Examples
+### Custom Calibration
 
-You can find common test cases for vessel maneuvering, such as the ZigZag or turning maneuver test, in the `example.py` file.
+You can calibrate custom MMG vessels using the `mmgdynamics.mmg.dynamics.calibrate` function with a `MinimalVessel` dictionary. See `src/mmg/dynamics.py` for details. Abkowitz models currently rely on pre-defined coefficient sets (like `gms_like_inland_barge`).
 
+## References
 
-## Citation
-
-If you use this code in one of your projects or papers, please cite it as follows:
-
-```bibtex
-@misc{mmgdynamics,
-  author = {Niklas Paulig},
-  title = {MMG standard model for ship maneuvering},
-  year = {2024},
-  publisher = {GitHub},
-  journal = {GitHub Repository},
-  howpublished = {\url{https://github.com/nikpau/mmgdynamics}}
-}
-```
+*   **MMG:** Yasukawa, H., Yoshimura, Y. (2015). Introduction of MMG standard method for ship maneuvering predictions. *J Mar Sci Technol 20*, 37-52. [DOI](https://doi.org/10.1007/s00773-014-0293-y)
+*   **Abkowitz:** Yang, Y., el Moctar, O. (2024). Maneuvering simulation of inland vessels in shallow water. *Ocean Engineering*. [DOI](https://doi.org/10.1016/j.oceaneng.2024.116927)

@@ -1,9 +1,11 @@
 import matplotlib
-import mmgdynamics.calibrated_vessels as cvs
 from dataclasses import dataclass
 
-from mmgdynamics.maneuvers import *
-from mmgdynamics.structs import Vessel
+from pymaneuvering.utils.maneuvers import (
+    turning_maneuver, plot_trajecory, plot_r, zigzag_maneuver
+)
+from pymaneuvering.utils.common import InitialValues
+from pymaneuvering import Vessel, VTYPE # Dispatcher and Enum
 
 matplotlib.rcParams['font.family'] = ['Liberation Sans', 'sans-serif']
 font = {'weight': 'normal','size': 14}
@@ -51,7 +53,7 @@ class KVLCC2Inits:
 
 
 # Use a pre-calibrated vessel
-vessel = Vessel(**cvs.kvlcc2_l64)
+vessel = Vessel(new_from=VTYPE.KVLCC2_L64)
 
 iters = 3000
 def test_turning_maneuver():
@@ -68,5 +70,5 @@ def test_zig_zag():
         dir=1, 
         dps=5, 
         max_deg=20,
-        wd=[1.2*vessel.d,None]
+        wd=[1.2*vessel.vessel.d,None]
     )

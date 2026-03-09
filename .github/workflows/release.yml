@@ -1,0 +1,32 @@
+name: Create Release on Push to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '(?<=^version = ")[^"]+' pyproject.toml)
+          echo "release_version=$VERSION" >> $GITHUB_ENV
+
+      - name: Create a new GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.release_version }}
+          release_name: Release ${{ env.release_version }}
+          body: |
+            Automated release for version ${{ env.release_version }}
+          draft: false
+          prerelease: false

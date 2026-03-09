@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Patch
 
-from mmgdynamics import step, pstep
-from mmgdynamics.structs import InitialValues, Vessel
+from pymaneuvering.utils.common import InitialValues, Maneuvervable as Vessel
 
 Trajectories = Sequence[NDArray[np.float64]]
 
@@ -70,11 +69,10 @@ def turning_maneuver(ivs: InitialValues, vessel: Vessel,
     for s in range(time):
 
         # Solve
-        uvr, eta = pstep(
+        uvr, eta = vessel.pstep(
             X=uvr,
             pos = pos,
             psi= psi,   
-            vessel=vessel,
             dT=1,
             nps=ivs.nps,
             delta=delta_list[s],
@@ -135,15 +133,22 @@ def plot_trajecory(trajectories: Trajectories, vessel: Vessel) -> None:
 
     plt.figure(figsize=(16, 10))
 
+    if hasattr(vessel.vessel, "Lpp"):
+        L = vessel.vessel.Lpp
+    elif hasattr(vessel.vessel, "L"):
+        L = vessel.vessel.L
+    else:
+        raise AttributeError("Vessel object has no Lpp or L attribute")
+
     plt.plot(
-        trajectories[0][1]/vessel.Lpp, 
-        trajectories[0][0]/vessel.Lpp, 
+        trajectories[0][1]/L, 
+        trajectories[0][0]/L, 
         linewidth=2.5, color="orange"
     )
     
     plt.plot(
-        trajectories[1][1]/vessel.Lpp, 
-        trajectories[1][0]/vessel.Lpp, 
+        trajectories[1][1]/L, 
+        trajectories[1][0]/L, 
         linewidth=2.5
     )
 
@@ -176,8 +181,16 @@ def zigzag_maneuver(ivs: InitialValues, vessel: Vessel,
         np.ndarray: Array of yaw angles and rudder angles for each timestep
     """
     assert dir in [1,-1], "Invalid direction. Choose either 1 or -1."
+
+    if hasattr(vessel.vessel, "d"):
+        draft = vessel.vessel.d
+    elif hasattr(vessel.vessel, "T"):
+        draft = vessel.vessel.T
+    else:
+        raise AttributeError("Vessel object has no d or T attribute")
+
     if wd is None:
-        wd = [1.2*vessel.d, None]
+        wd = [1.2*draft, None]
         print("No water depth specified. Using 1.2*draft and infinite depth")
     
     def a2pm(angle: float) -> float:
@@ -196,10 +209,9 @@ def zigzag_maneuver(ivs: InitialValues, vessel: Vessel,
     for idx, depth in enumerate(wd):
 
         uvr = reset_ivs
-        pos = np.array([0., 0.])
-        psi = 0.0
-        delta = 0.0
-        first,second,third = True, True, True
+        pos = np.array(vessel.pstep(
+                X=uvr,
+                pos=posTrue, True, True
         while True:
             
             # Solve the ODE system for one second at a time
@@ -268,7 +280,12 @@ def plot_zigzag(
     ls = [(0, (3, 1, 1, 1, 1, 1)),"-"]
     labels = ["h/d = $\infty$","h/d = 1.2"]
     L = vessel.Lpp
-    delta_max = max(delta_list[0])
+    if hasattr(vessel.vessel, "Lpp"):
+        L = vessel.vessel.Lpp
+    elif hasattr(vessel.vessel, "L"):
+        L = vessel.vessel.L
+    else:
+        raise AttributeError("Vessel object has no Lpp or L attribute")x(delta_list[0])
 
     fig = plt.figure(figsize=(8, 4))
 

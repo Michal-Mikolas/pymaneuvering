@@ -1,8 +1,46 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
+import numpy as np
+import numpy.typing as npt
+from abc import ABC, abstractmethod
+
+class LogicError(Exception):
+    pass
+
+# Vessel fixed coordinate system type aliases
+Surge = float  # Longitudinal velocity
+Sway = float  # Lateral velocity
+YawRate = float  # Yaw rate
+
+Nu = tuple[Surge, Sway, YawRate]
+
+# Earth fixed coordinate system type aliases
+Northing = float  # North coordinate
+Easting = float  # East coordinate
+Psi = float  # Heading angle [rad]
+
+EarthFixedPos = tuple[Northing, Easting]
+Eta = tuple[Northing, Easting, Psi]
+
+def angle_to_two_pi(angle: float) -> float:
+    """Converts an angle to the range [0, 2*pi]."""
+    return angle % (2 * np.pi)
+
+def rotpsi(psi: float, offset: float = 0.0) -> np.ndarray:
+    """Computes a rotation matrix for given heading (in rad)."""
+    psi += offset
+    return np.array(
+        [
+            [np.cos(psi), -np.sin(psi), 0.0],
+            [np.sin(psi), np.cos(psi), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+
 
 @dataclass
-class Vessel:
+class MMGVessel:
     
     rho: float # Water density
     rho_air: float # Air density
@@ -64,22 +102,80 @@ class Vessel:
     J_z_dash: float # Added moment of inertia coefficient
     
     # Wake change coefficients and propeller advance ratio polynomial
-    k_0: Optional[float] = None
-    k_1: Optional[float] = None
-    k_2: Optional[float] = None
-    C_1: Optional[float] = None
-    C_2_plus: Optional[float] = None
-    C_2_minus: Optional[float] = None
-    J_slo: Optional[float] = None
-    J_int: Optional[float] = None
+    k_0: float
+    k_1: float
+    k_2: float
+    C_1: float
+    C_2_plus: float
+    C_2_minus: float
+    J_slo: float
+    J_int: float
     
-    # Optional parameters depending on specification
-    gamma_R_plus: Optional[float] = None # Flow straightening coefficient for positive rudder angles
-    gamma_R_minus: Optional[float] = None # Flow straightening coefficient for negative rudder angles
+    gamma_R_plus: float # Flow straightening coefficient for positive rudder angles
+    gamma_R_minus: float # Flow straightening coefficient for negative rudder angles
+    f_alpha: float # Rudder lift gradient coefficient
+
     gamma_R: Optional[float] = None # Flow straightening coefficient
     A_R_Ld_em: Optional[float] = None # Fraction of moveable Rudder area to length*draft
-    f_alpha: Optional[float] = None # Rudder lift gradient coefficient
     delta_prop: Optional[float] = None
+
+@dataclass
+class AbkowitzVessel:
+
+    # Reference Speed
+    U_0: float
+
+    # Properties
+    L: float
+    B: float
+    T: float
+    x_G: float # Longitudinal center of gravity from midship (m)
+    m: float # Vessel mass (kg)
+    r_zz: float # Radius of gyration in yaw (m)
+    rho: float # Water density (kg/m³)
+    
+    # --- Surge Force (X) Coefficients ---
+    X_0: float
+    X_udot: float
+    X_u: float
+    X_uu: float
+    X_vv: float
+    X_vvvv: float # Term changes with water depth by multiplication with a polynomial
+    X_rr: float
+    X_vr: float
+    X_vvrr: float
+    X_dd: float
+    X_udd: float
+
+    # --- Sway Force (Y) Coefficients ---
+    Y_0: float
+    Y_vdot: float
+    Y_rdot: float
+    Y_v: float
+    Y_vvv: float
+    Y_r: float
+    Y_rrr: float
+    Y_vrr: float
+    Y_vvr: float
+    Y_d: float
+    Y_ddd: float
+    Y_ud: float
+    Y_uddd: float
+
+    # --- Yaw Moment (N) Coefficients ---
+    N_0: float
+    N_vdot: float
+    N_rdot: float
+    N_v: float
+    N_vvv: float
+    N_r: float
+    N_rrr: float
+    N_vrr: float
+    N_vvr: float
+    N_d: float
+    N_ddd: float
+    N_ud: float
+    N_uddd: float
 
 @dataclass
 class MinimalVessel:
@@ -97,6 +193,26 @@ class MinimalVessel:
     x_G: Optional[float] = None # X-Coordinate of the center of gravity (m)
     w_P0: Optional[float] = None # Wake fraction coefficient
     t_P: Optional[float] = None # Thrust deduction factor
+
+class Maneuvervable(ABC):
+    """Abstract Base Class for maneuverable vessels."""
+    @abstractmethod
+    def dynamics(self, *args, **kwargs) -> npt.NDArray[np.float32]:
+        """Dynamics function for maneuverable vessels, solving for u_dot, v_dot and r_dot."""
+        pass
+    
+    def step(self, *args, **kwargs) -> npt.NDArray[np.float32]:
+        """Perform a single time step using Euler integration."""
+        pass
+
+    def pstep(self, *args, **kwargs) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """Perform a single time step and transform to earth-fixed coordinates."""
+        pass
+    
+class IntegrationMode(Enum):
+    """Enumeration for integration modes."""
+    TRAPEZOIDAL = 1
+    RK4 = 2
 
 
 Surge        = float
