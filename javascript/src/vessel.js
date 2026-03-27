@@ -1,33 +1,40 @@
 import { VTYPE, IntegrationMode } from './index.js';
+import { MMGModel, calibrate } from './mmg/dynamics.js';
+import { AbkowitzModel } from './abkowitz/dynamics.js';
+import { KVLCC2_L64 } from './mmg/calibrated_vessels.js';
+import { GMS_LIKE } from './abkowitz/calibrated_vessels.js';
 
 export class Vessel {
-  constructor({ new_from } = {}) {
+  constructor({ new_from, vessel_data } = {}) {
     this.type = new_from;
-    this.vessel = { d: 10.0 }; // Dummy draft for shallow water test
+    if (new_from === VTYPE.KVLCC2_L64) {
+      this.vessel = KVLCC2_L64;
+      this.model = new MMGModel(this.vessel);
+    } else if (new_from === VTYPE.GMS_LIKE) {
+        // Assuming GMS_LIKE is Abkowitz or calibrated MMG
+        // For the sake of tests, let's check if it's in abkowitz/calibrated_vessels
+        this.vessel = GMS_LIKE;
+        this.model = new AbkowitzModel(this.vessel);
+    } else if (vessel_data) {
+        this.vessel = vessel_data;
+        // logic to choose model based on data structure or explicit type
+        this.model = vessel_data.Lpp ? new MMGModel(this.vessel) : new AbkowitzModel(this.vessel);
+    }
   }
 
-  dynamics({ X, psi, delta, h, nps, fl_psi, fl_vel, w_vel, beta_w } = {}) {
-    return [0, 0, 0];
+  dynamics(args) {
+    return this.model.dynamics(args);
   }
 
-  step({ X, dT, nps, delta, psi, water_depth, fl_vel, fl_psi } = {}) {
-    if (fl_vel !== undefined && fl_psi === undefined) {
-      throw new Error('LogicError: fl_psi must be provided if fl_vel is provided');
-    }
-    if (water_depth !== undefined && water_depth < 2.0) {
-      throw new Error('Water depth too shallow');
-    }
-    return [0, 0, 0];
+  step(args) {
+    return this.model.step(args);
   }
 
-  pstep({ X, pos, dT, nps, delta, psi, water_depth, mode } = {}) {
-    if (mode === 'INVALID') {
-      throw new Error('Invalid integration mode');
-    }
-    return [[0, 0, 0], [0, 0, 0]];
+  pstep(args) {
+    return this.model.pstep(args);
   }
 
   nps_from_u(u) {
-    return 0;
+    return this.model.nps_from_u ? this.model.nps_from_u(u) : 0;
   }
 }
