@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ESNext"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["jest", "gl-matrix"]
+  },
+  "include": ["lib/**/*.ts", "lib/**/*.js", "tests/**/*.ts"],
+  "exclude": ["node_modules"]
+}

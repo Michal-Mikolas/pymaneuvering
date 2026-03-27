@@ -1,0 +1,34 @@
+{
+  "name": "pymaneuvering",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "lib/boat-controller.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikpau/pymaneuvering.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nikpau/pymaneuvering/issues"
+  },
+  "homepage": "https://github.com/nikpau/pymaneuvering#readme",
+  "dependencies": {
+    "gl-matrix": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/gl-matrix": "^3.2.0",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.2"
+  }
+}
