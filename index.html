@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marine Simulator - Pymaneuvering</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="hud">
+      <div id="stats">
+        <div class="stat"><span class="label">Speed:</span> <span id="speed-val">0.00</span> kn</div>
+        <div class="stat"><span class="label">RPM:</span> <span id="rpm-val">0</span></div>
+      </div>
+      <div class="control-group">
+        <label for="throttle">Throttle</label>
+        <input type="range" id="throttle" min="-1" max="1" step="0.01" value="0">
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

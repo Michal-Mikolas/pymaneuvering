@@ -8,6 +8,7 @@
     "lib": "lib"
   },
   "scripts": {
+    "dev": "vite",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
@@ -22,13 +23,16 @@
   },
   "homepage": "https://github.com/nikpau/pymaneuvering#readme",
   "dependencies": {
-    "gl-matrix": "^3.4.4"
+    "gl-matrix": "^3.4.4",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@types/gl-matrix": "^3.2.0",
     "@types/jest": "^29.5.12",
+    "@types/three": "^0.183.1",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "vite": "^8.0.3"
   }
 }

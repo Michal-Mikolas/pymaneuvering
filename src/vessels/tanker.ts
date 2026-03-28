@@ -10,14 +10,14 @@ export const tanker: VesselProfile = {
     beam: 11.6
   },
   engine: {
-    maxEngineRPM: 120,
+    maxEngineRPM: 450,
     reductionGearRatio: 1.0
   },
   steering: {
     maxRudderAngleRads: 35 * (Math.PI / 180)
   },
   assets: {
-    model3DPath: '/assets/vessels/tanker/model.glb',
-    sprite2DPath: '/assets/vessels/tanker/sprite.png'
+    model3DPath: '/assets/vessels/tanker/model.glb',  // "assets" folder lives inside "/public" folder
+    sprite2DPath: '/assets/vessels/tanker/sprite.png'   // "assets" folder lives inside "/public" folder
   }
 };

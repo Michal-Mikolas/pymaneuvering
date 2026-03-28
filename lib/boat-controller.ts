@@ -10,6 +10,7 @@ export class BoatController {
   public position = { x: 0, y: 0, z: 0 };
   public rotationY = 0;
   public currentEngineRPM = 0;
+  public currentSpeed = 0; // Speed in m/s (surge)
 
   // Internal physics state
   private vessel: any;
@@ -78,5 +79,6 @@ export class BoatController {
     this.position.y = 0;
     this.position.z = -this.pos[0];
     this.rotationY = -this.psi;
+    this.currentSpeed = this.uvr[0];
   }
 }
