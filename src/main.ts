@@ -74,9 +74,7 @@ function applySimulationSettings(): void {
   const rawOpacity = vesselOpacityInput ? parseFloat(vesselOpacityInput.value) : 0.8;
   const vesselOpacity = Number.isFinite(rawOpacity) ? Math.min(1, Math.max(0, rawOpacity)) : 0.8;
 
-  // Stored for future camera behavior work.
-  void followShip;
-
+  engine.setFollowShip(followShip);
   engine.setShowPivotPoint(showPivotPoint);
   engine.setVesselOpacity(vesselOpacity);
 }

@@ -7,8 +7,11 @@ export class RenderingEngine {
   private camera: THREE.OrthographicCamera;
   private container: HTMLElement;
   private frustumSize: number = 150; // 150 meters across
+  private environmentRotationGroup: THREE.Group;
+  private environmentTranslationGroup: THREE.Group;
   private vesselMesh: THREE.Mesh | null = null;
   private pivotPointMesh: THREE.Mesh | null = null;
+  private followShip = true;
   private showPivotPoint = false;
 
   constructor(container: HTMLElement) {
@@ -23,6 +26,10 @@ export class RenderingEngine {
     // 2. Initialize Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
+    this.environmentRotationGroup = new THREE.Group();
+    this.environmentTranslationGroup = new THREE.Group();
+    this.environmentRotationGroup.add(this.environmentTranslationGroup);
+    this.scene.add(this.environmentRotationGroup);
 
     // 3. Initialize Camera
     const aspect = container.clientWidth / container.clientHeight;
@@ -51,7 +58,7 @@ export class RenderingEngine {
     const water = new THREE.Mesh(geometry, material);
     water.rotation.x = -Math.PI / 2;
     water.position.y = -1; // Slightly below origins
-    this.scene.add(water);
+    this.environmentTranslationGroup.add(water);
   }
 
   private initBuoys() {
@@ -68,7 +75,7 @@ export class RenderingEngine {
         const buoy = new THREE.Mesh(geometry, material);
         buoy.rotation.x = -Math.PI / 2;
         buoy.position.set(x, 0, z);
-        this.scene.add(buoy);
+        this.environmentTranslationGroup.add(buoy);
       }
     }
 
@@ -77,7 +84,7 @@ export class RenderingEngine {
     this.pivotPointMesh.rotation.x = -Math.PI / 2;
     this.pivotPointMesh.position.y = 0.2;
     this.pivotPointMesh.visible = false;
-    this.scene.add(this.pivotPointMesh);
+    this.environmentTranslationGroup.add(this.pivotPointMesh);
   }
 
   private onWindowResize() {
@@ -141,6 +148,10 @@ export class RenderingEngine {
     }
   }
 
+  public setFollowShip(follow: boolean) {
+    this.followShip = follow;
+  }
+
   public setVesselOpacity(opacity: number) {
     if (!this.vesselMesh) {
       return;
@@ -162,7 +173,8 @@ export class RenderingEngine {
   }
 
   /**
-   * Updates the vessel's transform and moves the camera to follow.
+   * Updates the vessel and applies an inverse transform to the environment
+   * when ship-follow mode is enabled.
    */
   public updateVesselTransform(
     position: { x: number, y: number, z: number },
@@ -171,17 +183,17 @@ export class RenderingEngine {
   ) {
     if (!this.vesselMesh) return;
 
-    // Apply Position
-    this.vesselMesh.position.set(position.x, 0.1, position.z);
-
-    // Apply Rotation
-    // The sprite is flat on the XZ plane (rotated -PI/2 on X).
-    // Heading (rotationY) should apply to the Z axis of the mesh to rotate it on the water surface.
-    this.vesselMesh.rotation.z = rotationY;
-
-    // Camera Tracking
-    this.camera.position.x = position.x;
-    this.camera.position.z = position.z;
+    if (this.followShip) {
+      this.vesselMesh.position.set(0, 0.1, 0);
+      this.vesselMesh.rotation.z = 0;
+      this.environmentTranslationGroup.position.set(-position.x, 0, -position.z);
+      this.environmentRotationGroup.rotation.set(0, -rotationY, 0);
+    } else {
+      this.vesselMesh.position.set(position.x, 0.1, position.z);
+      this.vesselMesh.rotation.z = rotationY;
+      this.environmentTranslationGroup.position.set(0, 0, 0);
+      this.environmentRotationGroup.rotation.set(0, 0, 0);
+    }
 
     if (this.pivotPointMesh) {
       this.pivotPointMesh.visible = this.showPivotPoint && pivotPoint !== null;
