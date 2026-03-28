@@ -16,8 +16,8 @@ body, html {
   position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  align-items: stretch;
+  gap: 16px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   padding: 24px;
@@ -38,6 +38,12 @@ body, html {
 #steering-hud {
   bottom: 40px;
   left: 40px;
+}
+
+#settings-hud {
+  top: 40px;
+  right: 40px;
+  min-width: 280px;
 }
 
 #stats {
@@ -95,6 +101,109 @@ body, html {
 
 #steering-hud .steering-group {
   padding-bottom: 20px;
+}
+
+.collapsible-panel,
+.collapsible-section {
+  gap: 12px;
+}
+
+.panel-toggle,
+.section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.panel-toggle-icon,
+.section-toggle-icon {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+  transition: transform 0.2s ease;
+}
+
+.panel-content,
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collapsible-panel:not(.is-open) .panel-content,
+.collapsible-section:not(.is-open) .section-content {
+  display: none;
+}
+
+.collapsible-panel.is-open .panel-toggle-icon,
+.collapsible-section.is-open .section-toggle-icon {
+  transform: rotate(45deg);
+}
+
+.settings-section {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.checkbox-row,
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.checkbox-row span,
+.settings-field span {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #1e88e5;
+  flex-shrink: 0;
+}
+
+.settings-field input[type="number"] {
+  width: 90px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+}
+
+.settings-field input[type="number"]:focus {
+  outline: 1px solid rgba(100, 255, 218, 0.6);
+  outline-offset: 0;
+}
+
+.settings-placeholder {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
 }
 
 .helm-slider {

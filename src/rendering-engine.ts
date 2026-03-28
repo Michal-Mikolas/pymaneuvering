@@ -9,6 +9,7 @@ export class RenderingEngine {
   private frustumSize: number = 150; // 150 meters across
   private vesselMesh: THREE.Mesh | null = null;
   private pivotPointMesh: THREE.Mesh | null = null;
+  private showPivotPoint = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -114,6 +115,7 @@ export class RenderingEngine {
       vessel.position.y = 0.1; // Above water and buoys
       this.scene.add(vessel);
       this.vesselMesh = vessel;
+      this.setVesselOpacity(0.8);
     } catch (error) {
       console.warn(`Failed to load sprite for ${profile.name}, using fallback:`, error);
       const geometry = new THREE.PlaneGeometry(profile.dimensions.beam, profile.dimensions.length);
@@ -127,7 +129,36 @@ export class RenderingEngine {
       fallbackVessel.position.y = 0.1;
       this.scene.add(fallbackVessel);
       this.vesselMesh = fallbackVessel;
+      this.setVesselOpacity(0.8);
     }
+  }
+
+  public setShowPivotPoint(show: boolean) {
+    this.showPivotPoint = show;
+
+    if (this.pivotPointMesh && !show) {
+      this.pivotPointMesh.visible = false;
+    }
+  }
+
+  public setVesselOpacity(opacity: number) {
+    if (!this.vesselMesh) {
+      return;
+    }
+
+    const clampedOpacity = THREE.MathUtils.clamp(opacity, 0, 1);
+    const material = this.vesselMesh.material;
+
+    if (Array.isArray(material)) {
+      material.forEach((entry) => {
+        entry.transparent = clampedOpacity < 1;
+        entry.opacity = clampedOpacity;
+      });
+      return;
+    }
+
+    material.transparent = clampedOpacity < 1;
+    material.opacity = clampedOpacity;
   }
 
   /**
@@ -153,7 +184,7 @@ export class RenderingEngine {
     this.camera.position.z = position.z;
 
     if (this.pivotPointMesh) {
-      this.pivotPointMesh.visible = pivotPoint !== null;
+      this.pivotPointMesh.visible = this.showPivotPoint && pivotPoint !== null;
       if (pivotPoint) {
         this.pivotPointMesh.position.set(pivotPoint.x, 0.2, pivotPoint.z);
       }
