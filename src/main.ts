@@ -30,7 +30,7 @@ if (steeringInput) {
 }
 
 if (followShipInput) {
-  followShipInput.checked = true;
+  followShipInput.checked = false;
 }
 
 if (showPivotPointInput) {
@@ -134,7 +134,7 @@ function setupCollapsibles(): void {
 }
 
 function applySimulationSettings(): void {
-  const followShip = followShipInput ? followShipInput.checked : true;
+  const followShip = followShipInput ? followShipInput.checked : false;
   const showPivotPoint = showPivotPointInput ? showPivotPointInput.checked : false;
   const rawOpacity = vesselOpacityInput ? parseFloat(vesselOpacityInput.value) : 0.8;
   const vesselOpacity = Number.isFinite(rawOpacity) ? Math.min(1, Math.max(0, rawOpacity)) : 0.8;

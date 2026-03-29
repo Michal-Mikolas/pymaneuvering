@@ -11,7 +11,7 @@ export class RenderingEngine {
   private environmentTranslationGroup: THREE.Group;
   private vesselMesh: THREE.Mesh | null = null;
   private pivotPointMesh: THREE.Mesh | null = null;
-  private followShip = true;
+  private followShip = false;
   private showPivotPoint = false;
 
   constructor(container: HTMLElement) {
@@ -173,8 +173,8 @@ export class RenderingEngine {
   }
 
   /**
-   * Updates the vessel and applies an inverse transform to the environment
-   * when ship-follow mode is enabled.
+   * Keeps the vessel centered on screen while optionally rotating the
+   * environment into ship-relative view.
    */
   public updateVesselTransform(
     position: { x: number, y: number, z: number },
@@ -189,9 +189,9 @@ export class RenderingEngine {
       this.environmentTranslationGroup.position.set(-position.x, 0, -position.z);
       this.environmentRotationGroup.rotation.set(0, -rotationY, 0);
     } else {
-      this.vesselMesh.position.set(position.x, 0.1, position.z);
+      this.vesselMesh.position.set(0, 0.1, 0);
       this.vesselMesh.rotation.z = rotationY;
-      this.environmentTranslationGroup.position.set(0, 0, 0);
+      this.environmentTranslationGroup.position.set(-position.x, 0, -position.z);
       this.environmentRotationGroup.rotation.set(0, 0, 0);
     }
 
