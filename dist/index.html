@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Marine Simulator - Pymaneuvering</title>
-    <script type="module" crossorigin src="./assets/index-BAfWcvVl.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DYnPsjs9.css">
+    <script type="module" crossorigin src="./assets/index-DEvbKCpm.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CzI8nqpe.css">
   </head>
   <body>
     <div id="app"></div>
@@ -31,6 +31,18 @@
         <span class="panel-toggle-icon" aria-hidden="true">+</span>
       </button>
       <div id="settings-panel-content" class="panel-content">
+        <section class="settings-section collapsible-section">
+          <button type="button" class="section-toggle" aria-expanded="false" aria-controls="vessel-settings-section">
+            <span>Vessel</span>
+            <span class="section-toggle-icon" aria-hidden="true">+</span>
+          </button>
+          <div id="vessel-settings-section" class="section-content">
+            <label class="settings-field" for="vessel-select">
+              <span>Type</span>
+              <select id="vessel-select"></select>
+            </label>
+          </div>
+        </section>
         <section class="settings-section collapsible-section">
           <button type="button" class="section-toggle" aria-expanded="false" aria-controls="view-settings-section">
             <span>View</span>

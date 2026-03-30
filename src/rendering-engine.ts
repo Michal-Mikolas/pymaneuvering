@@ -1,18 +1,22 @@
 import * as THREE from 'three';
 import { VesselProfile } from './vessels/types';
+import { getDefaultFrustumSizeForVesselLength } from './zoom.js';
 
 export class RenderingEngine {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
   private container: HTMLElement;
-  private frustumSize: number = 150; // 150 meters across
+  private frustumSize: number = getDefaultFrustumSizeForVesselLength(64);
+  private baseFrustumSize: number = this.frustumSize;
+  private zoomScale = 1;
   private environmentRotationGroup: THREE.Group;
   private environmentTranslationGroup: THREE.Group;
   private vesselMesh: THREE.Mesh | null = null;
   private pivotPointMesh: THREE.Mesh | null = null;
   private followShip = false;
   private showPivotPoint = false;
+  private loadRequestId = 0;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -50,6 +54,7 @@ export class RenderingEngine {
 
     // 5. Handle Resize
     window.addEventListener('resize', () => this.onWindowResize());
+    this.renderer.domElement.addEventListener('wheel', this.onMouseWheel, { passive: false });
   }
 
   private initWater() {
@@ -88,17 +93,62 @@ export class RenderingEngine {
   }
 
   private onWindowResize() {
+    this.updateCameraFrustum();
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+  }
+
+  private updateCameraFrustum() {
     const aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera.left = (-this.frustumSize * aspect) / 2;
     this.camera.right = (this.frustumSize * aspect) / 2;
     this.camera.top = this.frustumSize / 2;
     this.camera.bottom = -this.frustumSize / 2;
     this.camera.updateProjectionMatrix();
+  }
 
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+  private readonly onMouseWheel = (event: WheelEvent) => {
+    event.preventDefault();
+
+    const zoomFactor = Math.exp(event.deltaY * 0.0015);
+    this.zoomScale = THREE.MathUtils.clamp(this.zoomScale * zoomFactor, 0.25, 6);
+    this.frustumSize = this.baseFrustumSize * this.zoomScale;
+    this.updateCameraFrustum();
+  };
+
+  private setAdaptiveZoom(profile: VesselProfile) {
+    this.baseFrustumSize = getDefaultFrustumSizeForVesselLength(profile.dimensions.length);
+    this.zoomScale = 1;
+    this.frustumSize = this.baseFrustumSize;
+    this.updateCameraFrustum();
+  }
+
+  private removeCurrentVessel() {
+    if (!this.vesselMesh) {
+      return;
+    }
+
+    this.scene.remove(this.vesselMesh);
+    this.vesselMesh.geometry.dispose();
+
+    const material = this.vesselMesh.material;
+    if (Array.isArray(material)) {
+      material.forEach((entry) => {
+        entry.map?.dispose();
+        entry.dispose();
+      });
+    } else {
+      material.map?.dispose();
+      material.dispose();
+    }
+
+    this.vesselMesh = null;
   }
 
   public async loadVessel(profile: VesselProfile) {
+    const requestId = ++this.loadRequestId;
+    this.removeCurrentVessel();
+    this.setAdaptiveZoom(profile);
+
     const loader = new THREE.TextureLoader();
 
     try {
@@ -110,6 +160,11 @@ export class RenderingEngine {
           (err) => reject(err)
         );
       });
+
+      if (requestId !== this.loadRequestId) {
+        texture.dispose();
+        return;
+      }
 
       const geometry = new THREE.PlaneGeometry(profile.dimensions.beam, profile.dimensions.length);
       const material = new THREE.MeshBasicMaterial({
@@ -124,6 +179,10 @@ export class RenderingEngine {
       this.vesselMesh = vessel;
       this.setVesselOpacity(0.8);
     } catch (error) {
+      if (requestId !== this.loadRequestId) {
+        return;
+      }
+
       console.warn(`Failed to load sprite for ${profile.name}, using fallback:`, error);
       const geometry = new THREE.PlaneGeometry(profile.dimensions.beam, profile.dimensions.length);
       const material = new THREE.MeshBasicMaterial({

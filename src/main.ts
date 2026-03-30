@@ -1,8 +1,9 @@
 import './style.css';
-import { j105 } from './vessels/j105';
 import { RenderingEngine } from './rendering-engine';
 import { BoatController } from '../lib/boat-controller';
 import { KeyboardAxisController } from './keyboard-axis-controller';
+import { availableVessels, getVesselById } from './vessels/index.js';
+import { VesselProfile } from './vessels/types.js';
 
 const container = document.getElementById('app');
 const throttleInput = document.getElementById('throttle') as HTMLInputElement;
@@ -14,14 +15,32 @@ const followShipInput = document.getElementById('follow-ship') as HTMLInputEleme
 const showPivotPointInput = document.getElementById('show-pivot-point') as HTMLInputElement;
 const vesselOpacityInput = document.getElementById('vessel-opacity') as HTMLInputElement;
 const uiOpacityInput = document.getElementById('ui-opacity') as HTMLInputElement;
+const vesselSelect = document.getElementById('vessel-select') as HTMLSelectElement;
+const defaultVessel = availableVessels.find((vessel) => vessel.id === 'j105_deep_keel') ?? availableVessels[0];
 
 if (!container) {
   throw new Error("Could not find '#app' container in DOM.");
 }
 
 const engine = new RenderingEngine(container);
-const activeVessel = j105;
-const boat = new BoatController(activeVessel);
+let activeVessel = defaultVessel;
+let boat = new BoatController(activeVessel);
+
+function populateVesselSelect(): void {
+  if (!vesselSelect) {
+    return;
+  }
+
+  vesselSelect.replaceChildren(
+    ...availableVessels.map((vessel) => {
+      const option = document.createElement('option');
+      option.value = vessel.id;
+      option.textContent = vessel.name;
+      return option;
+    })
+  );
+  vesselSelect.value = activeVessel.id;
+}
 
 // Ensure throttle starts at 0
 if (throttleInput) {
@@ -89,6 +108,14 @@ function applyControls(): void {
   const steering = steeringInput ? parseFloat(steeringInput.value) : 0;
 
   boat.setControls(throttle, steering);
+}
+
+async function loadActiveVessel(profile: VesselProfile): Promise<void> {
+  activeVessel = profile;
+  boat = new BoatController(profile);
+  applyControls();
+  await engine.loadVessel(profile);
+  applySimulationSettings();
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -190,6 +217,17 @@ if (uiOpacityInput) {
   uiOpacityInput.addEventListener('change', applySimulationSettings);
 }
 
+if (vesselSelect) {
+  vesselSelect.addEventListener('change', () => {
+    const nextVessel = getVesselById(vesselSelect.value);
+    if (!nextVessel) {
+      return;
+    }
+
+    void loadActiveVessel(nextVessel);
+  });
+}
+
 document.addEventListener('keydown', (event) => {
   if (isTypingTarget(event.target)) {
     return;
@@ -222,14 +260,14 @@ window.addEventListener('blur', () => {
 });
 
 setupCollapsibles();
+populateVesselSelect();
 syncKeyboardStateFromInputs();
 applyControls();
 applySimulationSettings();
 
 // Initialize vessel
-engine.loadVessel(activeVessel).then(() => {
+loadActiveVessel(activeVessel).then(() => {
   console.log(`${activeVessel.name} loaded successfully (or via fallback).`);
-  applySimulationSettings();
 });
 
 // Animation loop

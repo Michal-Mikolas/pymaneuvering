@@ -30,6 +30,18 @@
       </button>
       <div id="settings-panel-content" class="panel-content">
         <section class="settings-section collapsible-section">
+          <button type="button" class="section-toggle" aria-expanded="false" aria-controls="vessel-settings-section">
+            <span>Vessel</span>
+            <span class="section-toggle-icon" aria-hidden="true">+</span>
+          </button>
+          <div id="vessel-settings-section" class="section-content">
+            <label class="settings-field" for="vessel-select">
+              <span>Type</span>
+              <select id="vessel-select"></select>
+            </label>
+          </div>
+        </section>
+        <section class="settings-section collapsible-section">
           <button type="button" class="section-toggle" aria-expanded="false" aria-controls="view-settings-section">
             <span>View</span>
             <span class="section-toggle-icon" aria-hidden="true">+</span>

@@ -85,6 +85,6 @@ export const j105: VesselProfile = {
   },
   assets: {
     model3DPath: './assets/vessels/sailboat/model.glb',
-    sprite2DPath: './assets/vessels/sailboat/j105-sprite.svg',
+    sprite2DPath: './assets/vessels/sailboat/j105-sprite.png',
   },
 };

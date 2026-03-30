@@ -213,7 +213,29 @@ html {
   font-size: 14px;
 }
 
+.settings-field select {
+  margin-left: auto;
+  width: 140px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+}
+
+.settings-field select option {
+  color: #3a3a3a;
+  background: #ffffff;
+}
+
 .settings-field input[type="number"]:focus {
+  outline: 1px solid rgba(100, 255, 218, 0.6);
+  outline-offset: 0;
+}
+
+.settings-field select:focus {
   outline: 1px solid rgba(100, 255, 218, 0.6);
   outline-offset: 0;
 }
