@@ -151,6 +151,17 @@ function handleKeyboardControlChange(changed: boolean, input: HTMLInputElement |
   input.value = controller.getValue().toFixed(2);
 }
 
+function centerInputAxis(input: HTMLInputElement | null, controller: KeyboardAxisController): void {
+  if (!input) {
+    return;
+  }
+
+  controller.setValue(parseFloat(input.value));
+  controller.center();
+  input.value = controller.getValue().toFixed(2);
+  applyControls();
+}
+
 function toggleCollapsibleState(containerEl: HTMLElement, isOpen: boolean, trigger: HTMLButtonElement): void {
   containerEl.classList.toggle('is-open', isOpen);
   trigger.setAttribute('aria-expanded', String(isOpen));
@@ -198,12 +209,20 @@ if (throttleInput) {
     syncKeyboardStateFromInputs();
     applyControls();
   });
+
+  throttleInput.addEventListener('dblclick', () => {
+    centerInputAxis(throttleInput, throttleKeyboard);
+  });
 }
 
 if (steeringInput) {
   steeringInput.addEventListener('input', () => {
     syncKeyboardStateFromInputs();
     applyControls();
+  });
+
+  steeringInput.addEventListener('dblclick', () => {
+    centerInputAxis(steeringInput, steeringKeyboard);
   });
 }
 

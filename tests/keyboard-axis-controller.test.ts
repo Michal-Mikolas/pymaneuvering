@@ -70,6 +70,28 @@ describe('KeyboardAxisController', () => {
     expect(controller.getValue()).toBeCloseTo(0, 5);
   });
 
+  it('exposes the same centering motion for non-keyboard triggers', () => {
+    const controller = new KeyboardAxisController({
+      holdBindings: {
+        KeyA: -1,
+        KeyD: 1,
+      },
+      centerBindings: ['KeyW', 'KeyS'],
+      holdUnitsPerSecond: 1,
+      snapUnitsPerSecond: 2,
+      centerUnitsPerSecond: 2,
+    });
+
+    controller.setValue(1);
+    controller.center();
+
+    controller.update(0.25);
+    expect(controller.getValue()).toBeCloseTo(0.5, 5);
+
+    controller.update(0.25);
+    expect(controller.getValue()).toBeCloseTo(0, 5);
+  });
+
   it('supports throttle double tap on Numpad2 for full astern', () => {
     const controller = new KeyboardAxisController({
       holdBindings: {

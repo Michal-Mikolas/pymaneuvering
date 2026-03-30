@@ -50,6 +50,13 @@ export class KeyboardAxisController {
     this.value = this.clamp(nextValue);
   }
 
+  public center(): void {
+    this.targetMotion = {
+      target: 0,
+      unitsPerSecond: this.centerUnitsPerSecond,
+    };
+  }
+
   public handleKeyDown(code: string, timestampMs: number, repeat = false): boolean {
     const holdDirection = this.holdBindings[code];
     const doubleTapDirection = this.doubleTapBindings[code];
@@ -78,10 +85,7 @@ export class KeyboardAxisController {
     }
 
     if (!repeat && this.centerBindings.has(code)) {
-      this.targetMotion = {
-        target: 0,
-        unitsPerSecond: this.centerUnitsPerSecond,
-      };
+      this.center();
       return true;
     }
 
