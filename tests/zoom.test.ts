@@ -1,16 +1,12 @@
-import { getDefaultFrustumSizeForVesselLength } from '../src/zoom.js';
+import { getDefaultZoomMultiplierForViewport } from '../src/zoom.js';
 
-describe('getDefaultFrustumSizeForVesselLength', () => {
-  it('keeps the tanker zoom unchanged at the current baseline', () => {
-    expect(getDefaultFrustumSizeForVesselLength(64)).toBeCloseTo(150, 5);
+describe('getDefaultZoomMultiplierForViewport', () => {
+  it('zooms out more by default on phone-sized touch viewports', () => {
+    expect(getDefaultZoomMultiplierForViewport(390, 844, true)).toBeGreaterThan(1);
   });
 
-  it('scales the default zoom proportionally with vessel length', () => {
-    expect(getDefaultFrustumSizeForVesselLength(10.57)).toBeCloseTo((10.57 / 64) * 150, 5);
-  });
-
-  it('falls back to the tanker baseline for invalid lengths', () => {
-    expect(getDefaultFrustumSizeForVesselLength(0)).toBeCloseTo(150, 5);
-    expect(getDefaultFrustumSizeForVesselLength(Number.NaN)).toBeCloseTo(150, 5);
+  it('keeps the desktop default zoom on larger or non-touch viewports', () => {
+    expect(getDefaultZoomMultiplierForViewport(1280, 800, false)).toBe(1);
+    expect(getDefaultZoomMultiplierForViewport(1024, 1366, true)).toBe(1);
   });
 });

@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { VesselProfile } from './vessels/types';
-import { getDefaultFrustumSizeForVesselLength } from './zoom.js';
+import {
+  getDefaultFrustumSizeForVesselLength,
+  getDefaultZoomMultiplierForViewport,
+} from './zoom.js';
 
 export class RenderingEngine {
   private renderer: THREE.WebGLRenderer;
@@ -17,6 +20,9 @@ export class RenderingEngine {
   private followShip = false;
   private showPivotPoint = false;
   private loadRequestId = 0;
+  private currentVesselLength = 64;
+  private pinchStartDistance: number | null = null;
+  private pinchStartZoomScale = 1;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -25,6 +31,7 @@ export class RenderingEngine {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(container.clientWidth, container.clientHeight);
+    this.renderer.domElement.style.touchAction = 'none';
     container.appendChild(this.renderer.domElement);
 
     // 2. Initialize Scene
@@ -55,6 +62,10 @@ export class RenderingEngine {
     // 5. Handle Resize
     window.addEventListener('resize', () => this.onWindowResize());
     this.renderer.domElement.addEventListener('wheel', this.onMouseWheel, { passive: false });
+    this.renderer.domElement.addEventListener('touchstart', this.onTouchStart, { passive: false });
+    this.renderer.domElement.addEventListener('touchmove', this.onTouchMove, { passive: false });
+    this.renderer.domElement.addEventListener('touchend', this.onTouchEnd);
+    this.renderer.domElement.addEventListener('touchcancel', this.onTouchEnd);
   }
 
   private initWater() {
@@ -93,8 +104,8 @@ export class RenderingEngine {
   }
 
   private onWindowResize() {
-    this.updateCameraFrustum();
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.updateAdaptiveZoomBase();
   }
 
   private updateCameraFrustum() {
@@ -110,16 +121,86 @@ export class RenderingEngine {
     event.preventDefault();
 
     const zoomFactor = Math.exp(event.deltaY * 0.0015);
-    this.zoomScale = THREE.MathUtils.clamp(this.zoomScale * zoomFactor, 0.25, 6);
-    this.frustumSize = this.baseFrustumSize * this.zoomScale;
-    this.updateCameraFrustum();
+    this.setZoomScale(this.zoomScale * zoomFactor);
   };
 
-  private setAdaptiveZoom(profile: VesselProfile) {
-    this.baseFrustumSize = getDefaultFrustumSizeForVesselLength(profile.dimensions.length);
-    this.zoomScale = 1;
-    this.frustumSize = this.baseFrustumSize;
+  private readonly onTouchStart = (event: TouchEvent) => {
+    if (event.touches.length !== 2) {
+      this.resetPinchZoom();
+      return;
+    }
+
+    event.preventDefault();
+    this.pinchStartDistance = this.getTouchDistance(event.touches);
+    this.pinchStartZoomScale = this.zoomScale;
+  };
+
+  private readonly onTouchMove = (event: TouchEvent) => {
+    if (event.touches.length !== 2 || this.pinchStartDistance === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentDistance = this.getTouchDistance(event.touches);
+
+    if (currentDistance <= 0) {
+      return;
+    }
+
+    const pinchRatio = this.pinchStartDistance / currentDistance;
+    this.setZoomScale(this.pinchStartZoomScale * pinchRatio);
+  };
+
+  private readonly onTouchEnd = (event: TouchEvent) => {
+    if (event.touches.length < 2) {
+      this.resetPinchZoom();
+      return;
+    }
+
+    this.pinchStartDistance = this.getTouchDistance(event.touches);
+    this.pinchStartZoomScale = this.zoomScale;
+  };
+
+  private getTouchDistance(touches: TouchList): number {
+    if (touches.length < 2) {
+      return 0;
+    }
+
+    const firstTouch = touches[0];
+    const secondTouch = touches[1];
+    return Math.hypot(
+      secondTouch.clientX - firstTouch.clientX,
+      secondTouch.clientY - firstTouch.clientY
+    );
+  }
+
+  private resetPinchZoom() {
+    this.pinchStartDistance = null;
+  }
+
+  private setZoomScale(nextZoomScale: number) {
+    this.zoomScale = THREE.MathUtils.clamp(nextZoomScale, 0.25, 6);
+    this.frustumSize = this.baseFrustumSize * this.zoomScale;
     this.updateCameraFrustum();
+  }
+
+  private updateAdaptiveZoomBase() {
+    const defaultFrustumSize = getDefaultFrustumSizeForVesselLength(this.currentVesselLength);
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const zoomMultiplier = getDefaultZoomMultiplierForViewport(
+      window.innerWidth,
+      window.innerHeight,
+      coarsePointer
+    );
+    this.baseFrustumSize = defaultFrustumSize * zoomMultiplier;
+    this.frustumSize = this.baseFrustumSize * this.zoomScale;
+    this.updateCameraFrustum();
+  }
+
+  private setAdaptiveZoom(profile: VesselProfile) {
+    this.currentVesselLength = profile.dimensions.length;
+    this.zoomScale = 1;
+    this.updateAdaptiveZoomBase();
   }
 
   private removeCurrentVessel() {
