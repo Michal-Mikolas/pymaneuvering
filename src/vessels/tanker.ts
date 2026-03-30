@@ -4,6 +4,8 @@ import { VesselProfile } from './types.js';
 export const tanker: VesselProfile = {
   id: 'kvlcc2_tanker',
   name: 'KVLCC2 Tanker',
+  defaultZoom: 0.8,
+  defaultZoomMobile: 0.8,
   physicsModel: VTYPE.KVLCC2_L64,
   physicsOverrides: {
     // Research supports RH handedness directly; the remaining values are a

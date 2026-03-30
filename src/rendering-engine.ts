@@ -22,6 +22,8 @@ export class RenderingEngine {
   private pivotPointOpacity = 0.2;
   private loadRequestId = 0;
   private currentVesselLength = 64;
+  private currentDefaultZoom = 1;
+  private currentDefaultZoomMobile = 1;
   private pinchStartDistance: number | null = null;
   private pinchStartZoomScale = 1;
 
@@ -192,18 +194,23 @@ export class RenderingEngine {
   private updateAdaptiveZoomBase() {
     const defaultFrustumSize = getDefaultFrustumSizeForVesselLength(this.currentVesselLength);
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-    const zoomMultiplier = getDefaultZoomMultiplierForViewport(
+    const viewportZoomMultiplier = getDefaultZoomMultiplierForViewport(
       window.innerWidth,
       window.innerHeight,
       coarsePointer
     );
-    this.baseFrustumSize = defaultFrustumSize * zoomMultiplier;
+    const vesselZoomMultiplier = viewportZoomMultiplier > 1
+      ? this.currentDefaultZoomMobile
+      : this.currentDefaultZoom;
+    this.baseFrustumSize = defaultFrustumSize * viewportZoomMultiplier * vesselZoomMultiplier;
     this.frustumSize = this.baseFrustumSize * this.zoomScale;
     this.updateCameraFrustum();
   }
 
   private setAdaptiveZoom(profile: VesselProfile) {
     this.currentVesselLength = profile.dimensions.length;
+    this.currentDefaultZoom = profile.defaultZoom;
+    this.currentDefaultZoomMobile = profile.defaultZoomMobile;
     this.zoomScale = 1;
     this.updateAdaptiveZoomBase();
   }

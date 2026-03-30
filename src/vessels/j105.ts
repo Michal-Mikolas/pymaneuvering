@@ -5,6 +5,8 @@ const degToRad = (degrees: number): number => degrees * (Math.PI / 180);
 export const j105: VesselProfile = {
   id: 'j105_deep_keel',
   name: 'J/105',
+  defaultZoom: 1.6,
+  defaultZoomMobile: 1.6,
   physicsVesselData: {
     // J/105 one-design deep-keel baseline.
     // Geometry terms come from the vessel-specific report. Interaction and

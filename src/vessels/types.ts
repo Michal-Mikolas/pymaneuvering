@@ -1,6 +1,8 @@
 export interface VesselProfile {
   id: string;
   name: string;
+  defaultZoom: number;
+  defaultZoomMobile: number;
   physicsModel?: any; // The constant from jsmaneuvering like KVLCC2_L64
   physicsVesselData?: Record<string, string | number | boolean | null>;
   physicsOverrides?: Record<string, string | number | boolean | null>;
