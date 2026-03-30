@@ -6,6 +6,8 @@ import {
 } from './zoom.js';
 
 export class RenderingEngine {
+  private static readonly VESSEL_ZOOM_TRANSITION_MS = 1000;
+
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
@@ -24,12 +26,16 @@ export class RenderingEngine {
   private currentVesselLength = 64;
   private currentDefaultZoom = 1;
   private currentDefaultZoomMobile = 1;
+  private targetFrustumSize: number = this.frustumSize;
+  private zoomTransition:
+    | { startFrustumSize: number; targetFrustumSize: number; startTimeMs: number; durationMs: number }
+    | null = null;
   private pinchStartDistance: number | null = null;
   private pinchStartZoomScale = 1;
 
   constructor(container: HTMLElement) {
     this.container = container;
-    
+
     // 1. Initialize Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -186,8 +192,10 @@ export class RenderingEngine {
   }
 
   private setZoomScale(nextZoomScale: number) {
+    this.zoomTransition = null;
     this.zoomScale = THREE.MathUtils.clamp(nextZoomScale, 0.25, 6);
-    this.frustumSize = this.baseFrustumSize * this.zoomScale;
+    this.targetFrustumSize = this.baseFrustumSize * this.zoomScale;
+    this.frustumSize = this.targetFrustumSize;
     this.updateCameraFrustum();
   }
 
@@ -203,16 +211,67 @@ export class RenderingEngine {
       ? this.currentDefaultZoomMobile
       : this.currentDefaultZoom;
     this.baseFrustumSize = defaultFrustumSize * viewportZoomMultiplier * vesselZoomMultiplier;
-    this.frustumSize = this.baseFrustumSize * this.zoomScale;
+    this.targetFrustumSize = this.baseFrustumSize * this.zoomScale;
+
+    if (this.zoomTransition) {
+      this.zoomTransition.targetFrustumSize = this.targetFrustumSize;
+      return;
+    }
+
+    this.frustumSize = this.targetFrustumSize;
     this.updateCameraFrustum();
   }
 
   private setAdaptiveZoom(profile: VesselProfile) {
+    const startFrustumSize = this.frustumSize;
     this.currentVesselLength = profile.dimensions.length;
     this.currentDefaultZoom = profile.defaultZoom;
     this.currentDefaultZoomMobile = profile.defaultZoomMobile;
     this.zoomScale = 1;
     this.updateAdaptiveZoomBase();
+    this.startZoomTransition(startFrustumSize, this.targetFrustumSize);
+  }
+
+  private startZoomTransition(startFrustumSize: number, targetFrustumSize: number) {
+    if (Math.abs(startFrustumSize - targetFrustumSize) < 0.001) {
+      this.zoomTransition = null;
+      this.frustumSize = targetFrustumSize;
+      this.updateCameraFrustum();
+      return;
+    }
+
+    this.frustumSize = startFrustumSize;
+    this.zoomTransition = {
+      startFrustumSize,
+      targetFrustumSize,
+      startTimeMs: performance.now(),
+      durationMs: RenderingEngine.VESSEL_ZOOM_TRANSITION_MS,
+    };
+    this.updateCameraFrustum();
+  }
+
+  private updateZoomTransition() {
+    if (!this.zoomTransition) {
+      return;
+    }
+
+    const elapsedMs = performance.now() - this.zoomTransition.startTimeMs;
+    const rawProgress = elapsedMs / this.zoomTransition.durationMs;
+    const progress = THREE.MathUtils.clamp(rawProgress, 0, 1);
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+    this.frustumSize = THREE.MathUtils.lerp(
+      this.zoomTransition.startFrustumSize,
+      this.zoomTransition.targetFrustumSize,
+      easedProgress
+    );
+    this.updateCameraFrustum();
+
+    if (progress >= 1) {
+      this.frustumSize = this.zoomTransition.targetFrustumSize;
+      this.zoomTransition = null;
+      this.updateCameraFrustum();
+    }
   }
 
   private removeCurrentVessel() {
@@ -368,6 +427,7 @@ export class RenderingEngine {
   }
 
   public render() {
+    this.updateZoomTransition();
     this.renderer.render(this.scene, this.camera);
   }
 }
