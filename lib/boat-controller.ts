@@ -65,7 +65,10 @@ export class BoatController {
    * @param dt Time step in seconds.
    */
   public update(dt: number): void {
-    const maxPropellerNPS = (this.profile.engine.maxEngineRPM / this.profile.engine.reductionGearRatio) / 60.0;
+    const gearRatio = this.throttle < 0
+      ? (this.profile.engine.reductionGearRatioAstern ?? this.profile.engine.reductionGearRatio)
+      : this.profile.engine.reductionGearRatio;
+    const maxPropellerNPS = (this.profile.engine.maxEngineRPM / gearRatio) / 60.0;
     const nps = this.throttle * maxPropellerNPS;
     this.currentEngineRPM = this.throttle * this.profile.engine.maxEngineRPM;
     const delta = this.steering * this.profile.steering.maxRudderAngleRads;

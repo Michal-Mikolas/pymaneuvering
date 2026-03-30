@@ -71,6 +71,7 @@ export const j105: VesselProfile = {
     prop_walk_max_ratio: 0.22,
     prop_walk_nps_deadband: 0.15,
     prop_walk_yaw_arm: 0.10,
+    astern_thrust_scale: 0.38,
   },
   dimensions: {
     length: 10.57,
@@ -79,6 +80,7 @@ export const j105: VesselProfile = {
   engine: {
     maxEngineRPM: 3600,
     reductionGearRatio: 2.61,
+    reductionGearRatioAstern: 3.16,
   },
   steering: {
     maxRudderAngleRads: degToRad(35),

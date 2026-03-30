@@ -119,4 +119,44 @@ describe('BoatController', () => {
     expect(Number.isFinite(controller.currentSpeed)).toBe(true);
     expect(controller.currentEngineRPM).toBeCloseTo(2880, 5);
   });
+
+  it('uses the astern gearbox ratio for reverse thrust on J/105', () => {
+    const controller = new BoatController(j105);
+
+    (controller as any).uvr = [0.0, 0.0, 0.0];
+    (controller as any).pos = [0.0, 0.0];
+    (controller as any).psi = 0.0;
+
+    controller.setControls(-1.0, 0.0);
+    controller.update(0.1);
+
+    const appliedNps = (controller as any).vessel.model.dynamics({
+      X: [0.0, 0.0, 0.0],
+      psi: 0.0,
+      delta: 0.0,
+      nps: -((j105.engine.maxEngineRPM / (j105.engine.reductionGearRatioAstern ?? j105.engine.reductionGearRatio)) / 60.0),
+    });
+
+    expect(controller.currentEngineRPM).toBe(-3600);
+    expect(Math.abs((j105.engine.maxEngineRPM / (j105.engine.reductionGearRatioAstern ?? j105.engine.reductionGearRatio)) / 60.0))
+      .toBeLessThan(Math.abs((j105.engine.maxEngineRPM / j105.engine.reductionGearRatio) / 60.0));
+    expect(appliedNps[0]).toBeLessThan(0);
+  });
+
+  it('gives the J/105 weaker astern acceleration than ahead from rest', () => {
+    const ahead = new BoatController(j105);
+    const astern = new BoatController(j105);
+
+    ahead.setControls(1.0, 0.0);
+    astern.setControls(-1.0, 0.0);
+
+    for (let i = 0; i < 20; i += 1) {
+      ahead.update(0.1);
+      astern.update(0.1);
+    }
+
+    expect(ahead.currentSpeed).toBeGreaterThan(0);
+    expect(astern.currentSpeed).toBeLessThan(0);
+    expect(ahead.currentSpeed).toBeGreaterThan(Math.abs(astern.currentSpeed));
+  });
 });

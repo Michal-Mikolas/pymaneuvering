@@ -11,6 +11,7 @@ export interface VesselProfile {
   engine: {
     maxEngineRPM: number;
     reductionGearRatio: number;
+    reductionGearRatioAstern?: number;
   };
   steering: {
     maxRudderAngleRads: number;
