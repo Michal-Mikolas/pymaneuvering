@@ -5,8 +5,8 @@ const degToRad = (degrees: number): number => degrees * (Math.PI / 180);
 export const navy44: VesselProfile = {
   id: 'navy_44_mk2',
   name: 'Navy 44 (13.4m / 44ft)',
-  defaultZoom: 1.2,
-  defaultZoomMobile: 1.2,
+  defaultZoom: 1.3,
+  defaultZoomMobile: 1.3,
   physicsVesselData: {
     // Navy 44 Mk II powered-maneuvering baseline.
     //
